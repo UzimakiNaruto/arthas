@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.junit.Ignore;
@@ -14,6 +15,7 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.TraceClassVisitor;
 
 public class AsmTest implements Opcodes {
@@ -28,6 +30,7 @@ public class AsmTest implements Opcodes {
   }
 
   @Test
+  @Ignore
   public void t() throws IOException {
     ClassReader cr = new ClassReader(AsmTest.class.getName());
     ClassWriter cw = new ClassWriter(0);
@@ -81,33 +84,40 @@ public class AsmTest implements Opcodes {
   }
 
   @Test
-  @Ignore
+  // @Ignore
   public void asm()
-      throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-    ClassWriter cw = new ClassWriter(2);
+      throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, NoSuchFieldException {
+    ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+    CheckClassAdapter cca = new CheckClassAdapter(cw);
     String name = "demo/F";
-    cw.visit(V1_8, ACC_PUBLIC, name, null, "demo/AsmTest", null);
+    cca.visit(V1_8, ACC_PUBLIC, name, null, "demo/AsmTest", null);
 
-    FieldVisitor fv = cw.visitField(ACC_PUBLIC + ACC_STATIC, "age", "I", null, 3);
+    FieldVisitor fv = cca.visitField(ACC_PUBLIC + ACC_STATIC, "age", "I", null, 3);
     fv.visitEnd();
 
-    // MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, "<clinit>", "()V", null, null);
-    // mv.visitCode();
+    MethodVisitor mv = cca.visitMethod(ACC_PUBLIC + ACC_STATIC, "<clinit>", "()V", null, null);
+    mv.visitCode();
     // mv.visitInsn(ICONST_3);
-    // mv.visitFieldInsn(PUTSTATIC, name, "age", "I");
-    // mv.visitEnd();
-    // cw.visitEnd();
+    mv.visitLdcInsn(123);
+    mv.visitFieldInsn(PUTSTATIC, name, "age", "I");
+    mv.visitInsn(RETURN);
+    mv.visitMaxs(1,1);
+    mv.visitEnd();
+
+    cca.visitEnd();
 
     byte[] bytes = cw.toByteArray();
-    writeToClass(bytes);
+    // writeToClass(bytes);
 
     Class<?> clazz = loader.defineClass(name.replaceAll("/", "."), bytes);
 
     Method m = clazz.getMethod("before");
     m.setAccessible(true);
     Object value = m.invoke(null);
-
     System.out.println(value);
+
+    Field age = clazz.getField("age");
+    System.out.println(age.getInt(null));
   }
 
   private static void writeToClass(byte[] bytes) throws IOException {
