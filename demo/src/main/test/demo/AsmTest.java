@@ -1,7 +1,6 @@
 package demo;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -29,6 +28,15 @@ public class AsmTest implements Opcodes {
   }
 
   @Test
+  public void t() throws IOException {
+    ClassReader cr = new ClassReader(AsmTest.class.getName());
+    ClassWriter cw = new ClassWriter(0);
+    TraceClassVisitor tcv = new TraceClassVisitor(cw, new PrintWriter(System.out));
+    cr.accept(tcv, 0);
+  }
+
+  @Test
+  @Ignore
   public void trace() throws IOException, NoSuchMethodException {
     String newClassName = AsmTest.class.getName().replaceAll("\\.", "/") + "A";
 
