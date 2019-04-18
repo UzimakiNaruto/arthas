@@ -2,6 +2,8 @@ package demo;
 
 public class MyClassLoader extends ClassLoader {
 
+  private int age;
+
   @Override
   protected Class<?> findClass(String name) throws ClassNotFoundException {
     return super.findClass(name);
